@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Login</title>
+  </head>
+
+  <body>
+    <form id="form">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" />
+
+      <label for="password">Senha</label>
+      <input id="password" name="password" type="password" />
+
+      <button>Entrar</button>
+    </form>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script type="text/javascript">
+      const form = document.getElementById("form");
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const email = document.getElementById("email");
+        const password = document.getElementById("password");
+
+        if (email.value && password.value) {
+          axios
+            .post("/api/sessions", {
+              email: email.value,
+              password: password.value,
+            })
+            .then(function (response) {
+              const { token } = response.data;
+              localStorage.setItem("token", token);
+              window.location.href = "/chat.html";
+            })
+            .catch(function (error) {
+              alert("Usuário ou senha inválidos");
+            });
+        } else {
+          alert("Preencha todos os campos");
+        }
+      });
+    </script>
+  </body>
+</html>

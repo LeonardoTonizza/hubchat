@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Chat</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
+      crossorigin="anonymous"
+    />
+  </head>
+
+  <body>
+    <div class="container mt-5">
+      <form id="formChatId" class="row g-3 align-items-end">
+        <div class="col-auto">
+          <label for="chatId" class="form-label">ChatID</label>
+          <input
+            type="text"
+            class="form-control"
+            id="chatId"
+            placeholder="618dd5f412114388b589f437"
+          />
+        </div>
+
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary">Confirmar</button>
+        </div>
+      </form>
+
+      <ul class="list-group mt-5 mb-3" id="messages">
+        <!-- messages list -->
+      </ul>
+
+      <form id="formMessage" class="row g-3 align-items-end">
+        <div class="col-auto">
+          <input
+            type="text"
+            class="form-control"
+            id="messageText"
+            placeholder="Mensagem"
+          />
+        </div>
+
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary">Enviar</button>
+        </div>
+      </form>
+    </div>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+
+    <script>
+      document.getElementById("formMessage").style.display = "none";
+
+      const socket = io({
+        auth: (cb) => {
+          cb({
+            token: localStorage.getItem("token"),
+          });
+        },
+      });
+
+      socket.on("connect_error", (err) => {
+        window.location.href = "/";
+      });
+
+      socket.on("disconnect", () => {
+        window.location.href = "/";
+      });
+
+      socket.on("message", (data) => {
+        renderMessage(data.message);
+      });
+
+      document.getElementById("formChatId").addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const chatId = document.getElementById("chatId").value;
+        if (chatId) {
+          socket.emit("connectRoom", chatId);
+          document.getElementById("formMessage").style.display = "";
+          getOldMessages(chatId);
+        }
+      });
+
+      function renderMessage(message) {
+        const node = document.createElement("LI");
+        const textnode = document.createTextNode(message);
+        node.appendChild(textnode);
+        document.getElementById("messages").appendChild(node);
+      }
+
+      function getOldMessages(chatId) {
+        axios
+          .get(`/api/chats/${chatId}/messages`, {
+            headers: {
+              authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          })
+          .then((response) => {
+            response.data.forEach((message) => {
+              renderMessage(message.message);
+            });
+          })
+          .catch((error) => {
+            alert("Erro ao buscar mensagens");
+          });
+      }
+
+      document.getElementById("formMessage").addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const chatId = document.getElementById("chatId").value;
+        const messageInput = document.getElementById("messageText");
+
+        if (messageInput.value) {
+          axios
+            .post(
+              `/api/chats/${chatId}/messages`,
+              {
+                message: messageInput.value,
+              },
+              {
+                headers: {
+                  authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+              }
+            )
+            .then(() => {
+              messageInput.value = "";
+            })
+            .catch((error) => {
+              alert("Erro ao enviar mensagem");
+            });
+        }
+      });
+    </script>
+  </body>
+</html>
